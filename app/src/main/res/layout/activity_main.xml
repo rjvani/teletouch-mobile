@@ -10,8 +10,26 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.rohan.teletouchandroid.MainActivity">
 
+    <ImageView
+        android:id="@+id/hand_image"
+        android:layout_width="wrap_content"
+        android:layout_height="400dp"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/hand_img" />
+
+    <SeekBar
+        android:id="@+id/pressure_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/hand_image" />
+
     <TextView
+        android:id="@+id/actuator_id_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:layout_below="@id/pressure_bar"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:text="No data being sent..." />
+
 </RelativeLayout>
