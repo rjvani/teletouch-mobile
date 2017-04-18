@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,11 +18,13 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.example.rohan.teletouchandroid.util.PiActuatorTask;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
 
     private static final int MAX_DISTANCE = 50;
 
@@ -32,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private ImageView mHandImage;
     private SeekBar mPressureBar;
     private TextView mActuatorTextView;
+
+    private int mPressureIntensity;
 
     private static final Map<Position, Integer> mActuatorMap;
 
@@ -66,10 +71,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
         mHandImage = (ImageView) findViewById(R.id.hand_image);
         mPressureBar = (SeekBar) findViewById(R.id.pressure_bar);
         mActuatorTextView = (TextView) findViewById(R.id.actuator_id_text);
+
+        mPressureBar.setOnSeekBarChangeListener(this);
     }
 
     @Override
@@ -126,6 +132,10 @@ public class MainActivity extends AppCompatActivity {
     private void sendPressureData(int x, int y) {
         int actuatorId = getActuatorIdFromPosition(x, y);
         updateActuatorText(actuatorId);
+        // Send data to pi
+        if (actuatorId != -1) {
+            new PiActuatorTask(mHostAddress, mPort).execute(actuatorId, mPressureIntensity);
+        }
     }
 
     @Override
@@ -186,6 +196,21 @@ public class MainActivity extends AppCompatActivity {
 
         Dialog dialog = alertDialogBuilder.create();
         dialog.show();
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        this.mPressureIntensity = progress;
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+
     }
 
     private static class Position {
