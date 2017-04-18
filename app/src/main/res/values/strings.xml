@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">TeleTouch</string>
+    <string name="ip_hint_text">192.168.x.x</string>
+    <string name="port_hint_text">1234</string>
 </resources>

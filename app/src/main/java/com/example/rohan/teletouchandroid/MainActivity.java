@@ -1,9 +1,19 @@
 package com.example.rohan.teletouchandroid;
 
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -15,6 +25,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int MAX_DISTANCE = 50;
 
+    private String mHostAddress;
+    private int mPort;
+
+    private Button mSettingsMenuButton;
     private ImageView mHandImage;
     private SeekBar mPressureBar;
     private TextView mActuatorTextView;
@@ -52,9 +66,30 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         mHandImage = (ImageView) findViewById(R.id.hand_image);
         mPressureBar = (SeekBar) findViewById(R.id.pressure_bar);
         mActuatorTextView = (TextView) findViewById(R.id.actuator_id_text);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.settings:
+                showNetworkDialog();
+                break;
+            default:
+                break;
+        }
+
+        return true;
     }
 
     private static double distance(int x0, int y0, int x1, int y1) {
@@ -107,6 +142,50 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return true;
+    }
+
+    private void showNetworkDialog() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER_HORIZONTAL);
+        layout.setPadding(50, 50, 50, 0);
+
+        final TextView ipTitle = new TextView(this);
+        ipTitle.setText("Host Address");
+
+        final TextView portTitle = new TextView(this);
+        portTitle.setText("Port");
+
+        final EditText ipInput = new EditText(this);
+        ipInput.setTextSize(14);
+        ipInput.setHint(R.string.ip_hint_text);
+
+        final EditText portInput = new EditText(this);
+        portInput.setTextSize(14);
+        portInput.setHint(R.string.port_hint_text);
+
+        layout.addView(ipTitle);
+        layout.addView(ipInput);
+        layout.addView(portTitle);
+        layout.addView(portInput);
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this)
+                .setTitle("Network Configuration")
+                .setMessage("Set up your server's IP Address and port for communication.")
+                .setView(layout)
+                .setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mHostAddress = ipInput.getText().toString();
+                        mPort = Integer.parseInt(portInput.getText().toString());
+                    }
+
+                })
+                .setNegativeButton("Cancel", null);
+
+        Dialog dialog = alertDialogBuilder.create();
+        dialog.show();
     }
 
     private static class Position {
