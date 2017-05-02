@@ -2,18 +2,18 @@ package com.example.rohan.teletouchandroid;
 
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -24,21 +24,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
+public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, View.OnClickListener {
 
     private static final int MAX_DISTANCE = 50;
+    private static final int RECORDING_R = 0x7F;
+    private static final int RECORDING_G = 0x40;
+    private static final int RECORDING_B = 0x40;
+    private static final Handler mHandler;
+    private static final Map<Position, Integer> mActuatorMap;
+
+    private final Runnable mRunnable;
+
+    private Button mRecordingButton;
+    private SeekBar mPressureBar;
 
     private String mHostAddress;
     private int mPort;
-
-    private Button mSettingsMenuButton;
-    private ImageView mHandImage;
-    private SeekBar mPressureBar;
-    private TextView mActuatorTextView;
-
     private int mPressureIntensity;
-
-    private static final Map<Position, Integer> mActuatorMap;
+    private int mRecordingIndex;
+    private boolean mCurrentlyRecording;
 
     static {
         Map<Position, Integer> actuatorMap = new HashMap<Position, Integer>();
@@ -63,7 +67,23 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         actuatorMap.put(new Position(500, 1160), 18);
         actuatorMap.put(new Position(680, 1060), 19);
         actuatorMap.put(new Position(620, 1190), 20);
+
         mActuatorMap = Collections.unmodifiableMap(actuatorMap);
+        mHandler = new Handler();
+    }
+
+    public MainActivity() {
+        super();
+
+        mRunnable = new Runnable() {
+
+            @Override
+            public void run() {
+                updateRecordingBackground();
+                mHandler.postDelayed(this, 50);
+            }
+
+        };
     }
 
     @Override
@@ -71,11 +91,14 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mHandImage = (ImageView) findViewById(R.id.hand_image);
         mPressureBar = (SeekBar) findViewById(R.id.pressure_bar);
-        mActuatorTextView = (TextView) findViewById(R.id.actuator_id_text);
+        mRecordingButton = (Button) findViewById(R.id.record_button);
 
         mPressureBar.setOnSeekBarChangeListener(this);
+        mRecordingButton.setOnClickListener(this);
+
+        mRecordingIndex = 0;
+        mCurrentlyRecording = false;
     }
 
     @Override
@@ -117,21 +140,8 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         return -1;
     }
 
-    private void updateActuatorText(int actuatorId) {
-        String text = "";
-
-        if (actuatorId == -1) {
-            text = "No data being sent...";
-        } else {
-            text ="Sending data to actuator #" + actuatorId;
-        }
-
-        mActuatorTextView.setText(text);
-    }
-
     private void sendPressureData(int x, int y) {
         int actuatorId = getActuatorIdFromPosition(x, y);
-        updateActuatorText(actuatorId);
         // Send data to pi
         if (actuatorId != -1) {
             new PiActuatorTask(mHostAddress, mPort).execute(actuatorId, mPressureIntensity);
@@ -168,11 +178,13 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
         final EditText ipInput = new EditText(this);
         ipInput.setTextSize(14);
-        ipInput.setHint(R.string.ip_hint_text);
+        String defaultHost = getResources().getString(R.string.ip_hint_text);
+        ipInput.setHint((mHostAddress != "") ? mHostAddress : defaultHost);
 
         final EditText portInput = new EditText(this);
         portInput.setTextSize(14);
-        portInput.setHint(R.string.port_hint_text);
+        String defaultPort = getResources().getString(R.string.port_hint_text);
+        portInput.setHint((mPort != 0) ? Integer.toString(mPort) : defaultPort);
 
         layout.addView(ipTitle);
         layout.addView(ipInput);
@@ -211,6 +223,37 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
 
+    }
+
+    private void updateRecordingBackground() {
+        Double newR = RECORDING_R + RECORDING_R * Math.sin(mRecordingIndex);
+        Double newG = RECORDING_G + RECORDING_G * Math.sin(mRecordingIndex);
+        Double newB = RECORDING_B + RECORDING_B * Math.sin(mRecordingIndex);
+        int newColor = (0xFF << 24) | (newR.intValue() << 16) | (newG.intValue() << 8) | newB.intValue();
+        mRecordingButton.setBackgroundColor(newColor);
+        mRecordingIndex++;
+    }
+
+    private void onClickRecording() {
+        mCurrentlyRecording = !mCurrentlyRecording;
+
+        if (mCurrentlyRecording) {
+            mHandler.post(mRunnable);
+        } else {
+            mRecordingButton.setBackgroundColor(getResources().getColor(R.color.colorAccent));
+            mHandler.removeCallbacks(mRunnable);
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.record_button:
+                onClickRecording();
+                break;
+            default:
+                break;
+        }
     }
 
     private static class Position {
