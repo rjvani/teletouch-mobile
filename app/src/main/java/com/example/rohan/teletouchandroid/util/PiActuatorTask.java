@@ -30,7 +30,7 @@ public class PiActuatorTask extends AsyncTask<Integer, Void, Void> {
      * @param intensity intensity at that position
      * @return String of Python-interpretable dictionary with hand to pressure mapping.
      */
-    public String buildPressureDict(int handId, int intensity) {
+    public static String buildPressureDict(int handId, int intensity) {
         String result = "{ ";
         int startingId = 1;
         int endingId = 20;

@@ -20,8 +20,10 @@ import android.widget.TextView;
 
 import com.example.rohan.teletouchandroid.util.PiActuatorTask;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, View.OnClickListener {
@@ -38,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
     private Button mRecordingButton;
     private SeekBar mPressureBar;
 
+    private List<String> mRecordedList;
     private String mHostAddress;
     private int mPort;
     private int mPressureIntensity;
@@ -75,6 +78,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
     public MainActivity() {
         super();
 
+        mRecordedList = new ArrayList<String>();
         mRunnable = new Runnable() {
 
             @Override
@@ -144,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         int actuatorId = getActuatorIdFromPosition(x, y);
         // Send data to pi
         if (actuatorId != -1) {
+            mRecordedList.add(PiActuatorTask.buildPressureDict(actuatorId, mPressureIntensity));
             new PiActuatorTask(mHostAddress, mPort).execute(actuatorId, mPressureIntensity);
         }
     }
@@ -238,6 +243,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         mCurrentlyRecording = !mCurrentlyRecording;
 
         if (mCurrentlyRecording) {
+            mRecordedList = new ArrayList<String>();
             mHandler.post(mRunnable);
         } else {
             mRecordingButton.setBackgroundColor(getResources().getColor(R.color.colorAccent));
