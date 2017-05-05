@@ -1,6 +1,7 @@
 package com.example.rohan.teletouchandroid;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
 import android.support.v7.app.AlertDialog;
@@ -17,17 +18,31 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.rohan.teletouchandroid.util.PiActuatorTask;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, View.OnClickListener {
 
+    private static final String API_ADDRESS = "http://teletouch.herokuapp.com/api/address";
+    private static final String API_RECORDINGS = "http://teletouch.herokuapp.com/api/recordings";
     private static final int MAX_DISTANCE = 50;
     private static final int RECORDING_R = 0x7F;
     private static final int RECORDING_G = 0x40;
@@ -78,6 +93,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
     public MainActivity() {
         super();
 
+        mPort = 5005;
         mRecordedList = new ArrayList<String>();
         mRunnable = new Runnable() {
 
@@ -90,10 +106,45 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         };
     }
 
+    private void initNetwork() {
+        final Context context = this;
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url(API_ADDRESS)
+                .build();
+
+        // Send request to server to load and save the IP address of the receiver PI
+        client
+            .newCall(request)
+            .enqueue(new Callback() {
+
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Toast.makeText(context, "Cannot get IP Address!", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    try {
+                        String jsonData = response.body().string();
+                        String strippedJson = jsonData.substring(1, jsonData.length() - 1);
+                        JSONObject jsonObject = new JSONObject(strippedJson);
+                        mHostAddress = jsonObject.getString("ip");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+
+            });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        initNetwork();
 
         mPressureBar = (SeekBar) findViewById(R.id.pressure_bar);
         mRecordingButton = (Button) findViewById(R.id.record_button);
@@ -149,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         // Send data to pi
         if (actuatorId != -1) {
             mRecordedList.add(PiActuatorTask.buildPressureDict(actuatorId, mPressureIntensity));
-            new PiActuatorTask(mHostAddress, mPort).execute(actuatorId, mPressureIntensity);
+            new PiActuatorTask(mHostAddress, mPort, actuatorId, mPressureIntensity).execute();
         }
     }
 
@@ -248,6 +299,10 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         } else {
             mRecordingButton.setBackgroundColor(getResources().getColor(R.color.colorAccent));
             mHandler.removeCallbacks(mRunnable);
+            // Determine if we need to send data to the pi
+            if (mRecordedList.size() > 0) {
+                new PiActuatorTask(mHostAddress, mPort, mRecordedList).execute();
+            }
         }
     }
 
