@@ -167,11 +167,35 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             case R.id.settings:
                 showNetworkDialog();
                 break;
+            case R.id.recording:
+                displayRecordingDialog();
+                break;
             default:
                 break;
         }
 
         return true;
+    }
+
+    private void displayRecordingDialog() {
+        final EditText editText = new EditText(this);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this)
+                .setTitle("Play a Recording")
+                .setMessage("Enter a recording ID.")
+                .setView(editText)
+                .setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String recordingId = editText.getText().toString();
+                        new PiActuatorTask(mHostAddress, mPort).execute("recording" + recordingId);
+                    }
+
+                })
+                .setNegativeButton("Cancel", null);
+
+        Dialog dialog = alertDialogBuilder.create();
+        dialog.show();
     }
 
     private static double distance(int x0, int y0, int x1, int y1) {

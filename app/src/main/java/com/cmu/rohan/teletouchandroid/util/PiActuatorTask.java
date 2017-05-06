@@ -1,12 +1,9 @@
 package com.cmu.rohan.teletouchandroid.util;
 
 import android.os.AsyncTask;
-import android.util.Log;
-import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -26,7 +23,7 @@ import okhttp3.Response;
 /**
  * Created by rohan on 4/18/17.
  */
-public class PiActuatorTask extends AsyncTask<Integer, Void, Void> {
+public class PiActuatorTask extends AsyncTask<String, Void, Void> {
 
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -34,6 +31,11 @@ public class PiActuatorTask extends AsyncTask<Integer, Void, Void> {
     private String apiUrl;
     private int port;
     private List<String> pressureDictionaries;
+
+    public PiActuatorTask(String hostAddress, int port) {
+        this.hostAddress = hostAddress;
+        this.port = port;
+    }
 
     public PiActuatorTask(String hostAddress, int port, int actuatorId, int intensity) {
         this.hostAddress = hostAddress;
@@ -75,6 +77,20 @@ public class PiActuatorTask extends AsyncTask<Integer, Void, Void> {
         return result + "]";
     }
 
+    private void sendRecordingIdToPi(String recordingId) {
+        try {
+            String recordingData = "{ \"recordingId: " + recordingId + " }";
+            Socket socket = new Socket(hostAddress, port);
+            DataOutputStream DOS = new DataOutputStream(socket.getOutputStream());
+            DOS.writeUTF(recordingData);
+            socket.close();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void postRecording(final String recordingId) {
         OkHttpClient client = new OkHttpClient();
         String body = "{ \"" + recordingId + "\": " + convertPressureDictionary() + "}";
@@ -95,18 +111,7 @@ public class PiActuatorTask extends AsyncTask<Integer, Void, Void> {
 
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
-                        // Send to PI
-                        try {
-                            String recordingData = "{ \"recordingId: " + recordingId + " }";
-                            Socket socket = new Socket(hostAddress, port);
-                            DataOutputStream DOS = new DataOutputStream(socket.getOutputStream());
-                            DOS.writeUTF(recordingData);
-                            socket.close();
-                        } catch (UnknownHostException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        sendRecordingIdToPi(recordingId);
                     }
 
                 });
@@ -143,7 +148,13 @@ public class PiActuatorTask extends AsyncTask<Integer, Void, Void> {
     }
 
     @Override
-    protected Void doInBackground(Integer... params) {
+    protected Void doInBackground(String... params) {
+        // See if a recording ID needs to be sent
+        if (params.length > 0) {
+            sendRecordingIdToPi(params[0]);
+            return null;
+        }
+
         // See if a recording needs to be saved on the server
         if (pressureDictionaries.size() > 1) {
             saveRecording();

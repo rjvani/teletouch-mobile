@@ -3,4 +3,7 @@
     <item
         android:id="@+id/settings"
         android:title="Settings" />
+    <item
+        android:id="@+id/recording"
+        android:title="Send Recording" />
 </menu>
