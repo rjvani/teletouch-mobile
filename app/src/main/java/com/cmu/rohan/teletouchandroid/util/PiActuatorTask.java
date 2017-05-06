@@ -79,7 +79,7 @@ public class PiActuatorTask extends AsyncTask<String, Void, Void> {
 
     private void sendRecordingIdToPi(String recordingId) {
         try {
-            String recordingData = "{ \"recordingId: " + recordingId + " }";
+            String recordingData = "{ \"recordingId\": \"" + recordingId + "\" }";
             Socket socket = new Socket(hostAddress, port);
             DataOutputStream DOS = new DataOutputStream(socket.getOutputStream());
             DOS.writeUTF(recordingData);
