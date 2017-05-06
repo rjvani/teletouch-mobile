@@ -1,4 +1,4 @@
-package com.example.rohan.teletouchandroid;
+package com.cmu.rohan.teletouchandroid;
 
 import org.junit.Test;
 

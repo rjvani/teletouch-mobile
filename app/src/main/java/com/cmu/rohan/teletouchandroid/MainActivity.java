@@ -1,4 +1,4 @@
-package com.example.rohan.teletouchandroid;
+package com.cmu.rohan.teletouchandroid;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -20,9 +20,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.rohan.teletouchandroid.util.PiActuatorTask;
+import com.cmu.rohan.teletouchandroid.util.PiActuatorTask;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -115,28 +114,27 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
         // Send request to server to load and save the IP address of the receiver PI
         client
-            .newCall(request)
-            .enqueue(new Callback() {
+                .newCall(request)
+                .enqueue(new Callback() {
 
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    Toast.makeText(context, "Cannot get IP Address!", Toast.LENGTH_SHORT).show();
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    try {
-                        String jsonData = response.body().string();
-                        String strippedJson = jsonData.substring(1, jsonData.length() - 1);
-                        JSONObject jsonObject = new JSONObject(strippedJson);
-                        mHostAddress = jsonObject.getString("ip");
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        Toast.makeText(context, "Cannot get IP Address!", Toast.LENGTH_SHORT).show();
                     }
 
-                }
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        try {
+                            String jsonData = response.body().string();
+                            String strippedJson = jsonData.substring(1, jsonData.length() - 1);
+                            JSONObject jsonObject = new JSONObject(strippedJson);
+                            mHostAddress = jsonObject.getString("ip");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
 
-            });
+                });
     }
 
     @Override
@@ -199,8 +197,11 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         int actuatorId = getActuatorIdFromPosition(x, y);
         // Send data to pi
         if (actuatorId != -1) {
-            mRecordedList.add(PiActuatorTask.buildPressureDict(actuatorId, mPressureIntensity));
-            new PiActuatorTask(mHostAddress, mPort, actuatorId, mPressureIntensity).execute();
+            if (mCurrentlyRecording) {
+                mRecordedList.add(PiActuatorTask.buildPressureDict(actuatorId, mPressureIntensity));
+            } else {
+                new PiActuatorTask(mHostAddress, mPort, actuatorId, mPressureIntensity).execute();
+            }
         }
     }
 
@@ -301,7 +302,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             mHandler.removeCallbacks(mRunnable);
             // Determine if we need to send data to the pi
             if (mRecordedList.size() > 0) {
-                new PiActuatorTask(mHostAddress, mPort, mRecordedList).execute();
+                new PiActuatorTask(mHostAddress, mPort, mRecordedList, API_RECORDINGS).execute();
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.example.rohan.teletouchandroid;
+package com.cmu.rohan.teletouchandroid;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
