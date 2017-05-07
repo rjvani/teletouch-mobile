@@ -159,12 +159,13 @@ public class PiActuatorTask extends AsyncTask<String, Void, Void> {
         if (pressureDictionaries.size() > 1) {
             saveRecording();
         } else {
-            String convertedDictionaries = convertPressureDictionary();
+            String dictionaries = convertPressureDictionary();
+            dictionaries = dictionaries.substring(1, dictionaries.length() - 1);
 
             try {
                 Socket socket = new Socket(hostAddress, port);
                 DataOutputStream DOS = new DataOutputStream(socket.getOutputStream());
-                DOS.writeUTF(convertedDictionaries);
+                DOS.writeUTF(dictionaries);
                 socket.close();
             } catch (UnknownHostException e) {
                 e.printStackTrace();
